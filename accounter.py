@@ -1,36 +1,43 @@
 import re
 import csv
-menu = '''
-    Choose your destiny:
-    [1] - Add record
-    [2] - Show report
-    [3] - Export to csv
-    [4] - Exit
-    '''
-submenu = '''
-    How do you want to do it?
-    [1] - All records
-    [2] - Records for specific date
-    [3] - Records for category
-    [4] - Records with amount more or less than value
-    '''
-menu_options = '1234'
-submenu_options = '1234'
+
+def init_main_menu():
+    main_menu = [
+        ['Add record', add_record ],
+        ['Show report', print_report_data ],
+        ['Export to CSV', export_report_csv ],
+        ['Exit', exit ]
+    ]
+    return main_menu
+
+def init_submenu():
+    submenu_report = [
+        ['All records', read_all_data],
+        ['Records for specific date', read_date_data ],
+        ['Records for category', read_category_data ],
+        ['Records with amount more or less than value', read_amount_data ]
+    ]
+    return submenu_report
 
 
 def main():
+    main_menu = init_main_menu()
     initialize_file('accounterdata.csv')
     while True:
-        print(menu)
-        selected = read_option(menu_options)
-        if(selected == '1'):
-            add_record()
-        elif(selected == '2'):
-            create_report('screen')
-        elif(selected == '3'):
-            create_report('file')
-        elif(selected == '4'):
-            break
+        interact_with_menu(main_menu)
+
+
+def interact_with_menu(menu):
+    print_menu(menu)
+    selected = read_option(menu)
+    menu[selected][1]()
+
+
+def print_menu(menu):
+    i = 1
+    for menuitem in menu:
+        print(i, '-', menuitem[0])
+        i += 1
 
 
 def initialize_file(file_name):
@@ -38,12 +45,13 @@ def initialize_file(file_name):
         return
 
 
-def read_option(available_options):
+def read_option(menu):
     option = input('What do you want to do? ')
+    available_options = ''.join( str(x) for x in list(range(1, len(menu)+1)))
     while (len(option) > 1 or option not in available_options):
         print('Something wrong!')
         option = input('What do you want to do? ')
-    return option
+    return int(option)-1
 
 
 def add_record():
@@ -85,23 +93,28 @@ def read_amount_value(value, note='>>'):
     return float(amount)
 
 
-def create_report(output):
-    print(submenu)
-    selected = read_option(submenu_options)
-    if(selected == '1'):
-        data = read_all_data()
-    elif(selected == '2'):
-        data = read_date_data()
-    elif(selected == '3'):
-        data = read_category_data()
-    elif(selected == '4'):
-        data = read_amount_data()
-    if(output == 'screen'):
-        print('Date\t\t\tCategory\t\t\tAmount')
-        for row in data:
-            print('\t\t'.join(row))
-    elif(output == 'file'):
-        export_csv(data)
+def create_report():
+    submenu_report = init_submenu()
+    print_menu(submenu_report)
+    selected = read_option(submenu_report)
+    data = submenu_report[selected][1]()
+    return data
+
+
+def print_report_data():
+    data = create_report()
+    print('Date\t\t\tCategory\t\t\tAmount')
+    for row in data:
+        print('\t\t'.join(row))
+
+
+def export_report_csv():
+    records = create_report()
+    file_name = read_filename()
+    with open(file_name, 'w', newline='') as file:
+        wr = csv.writer(file)
+        for item in records:
+            wr.writerow(item)
 
 
 def read_all_data(file_name='accounterdata.csv'):
@@ -156,14 +169,6 @@ def read_filename():
     while(len(file_name) <= 0 or re.match("^[\w\-. ]+$", file_name) is None):
         file_name = input("Provide file name to save records: ")
     return file_name + '.csv'
-
-
-def export_csv(records):
-    file_name = read_filename()
-    with open(file_name, 'w', newline='') as file:
-        wr = csv.writer(file)
-        for item in records:
-            wr.writerow(item)
 
 
 if __name__ == '__main__':
